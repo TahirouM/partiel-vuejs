@@ -1,83 +1,67 @@
 
-1 Expliquez pourquoi Node.js est adapté à la création d'API web non bloquantes. Citez un exemple d'opération lente et montrez l'intérêt de async/await par rapport à un callback simple.
+Q1 Expliquez le rôle de Vite dans un projet Vue. À quoi servent main.js, App.vue, le dossier components et le dossier views ?
 
-Node.js est adapté à la création d'API web non bloquantes car il fonctionne de manière asynchrone. Si un utilisateur lance une requête qui prend du temps, le serveur n'attend pas la fin de celle-ci avant de traiter les autres : il peut gérer plusieurs requêtes en parallèle.
-Par exemple, si un utilisateur demande un export de données qui prend 500 ms à exécuter, le serveur ne se bloque pas : il continue à recevoir et traiter les autres appels.
+Vite, c'est l'outil qui fait tourner le projet. En développement, il lance un serveur local avec du rechargement instantané : dès qu'on modifie un fichier, la page se met à jour toute seule sans tout recharger. Et quand on veut mettre en production, c'est lui qui build le projet (il regroupe et optimise tout le code) pour avoir des fichiers prêts à déployer.
 
-Pour gérer ces attentes, on peut utiliser des callbacks. Ça marche, mais dès qu'on enchaîne plusieurs opérations, le code se retrouve avec des fonctions dans des fonctions dans des fonctions, et c'est dur à suivre :
-
-app.get('/export', (req, res) => {
-  db.query('SELECT * FROM users', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    fs.writeFile('export.csv', convertToCsv(rows), (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.download('export.csv');
-    });
-  });
-});
-
-Avec async/await, c'est plus simple à lire parce qu'on écrit le code dans l'ordre, étape par étape :
-
-app.get('/export', async (req, res) => {
-  const rows = await db.query('SELECT * FROM users');
-  await fs.promises.writeFile('export.csv', convertToCsv(rows));
-  res.download('export.csv');
-});
+Pour les fichiers :
+- main.js, c'est le point d'entrée de l'appli. C'est là qu'on crée l'application Vue, qu'on la branche sur le HTML, et qu'on branche aussi les plugins comme le router et Pinia.
+- App.vue, c'est le composant racine, celui qui englobe tout le reste. En général il contient la navbar et un endroit où les pages viennent s'afficher (le router-view).
+- Le dossier components, c'est là qu'on met les petits bouts réutilisables : une carte, un bouton, une barre de recherche... des morceaux qu'on réutilise à plusieurs endroits.
+- Le dossier views, c'est les pages complètes, celles reliées à une route. Par exemple la page d'accueil, la page détail d'un événement, la page de création. Une view utilise souvent plusieurs components à l'intérieur.
 
 
+Q2 Expliquez le rôle de v-bind, v-model, v-if, v-for et @click. Donnez un court exemple d'utilisation pour au moins trois de ces directives.
 
-2 Expliquez le rôle de express.json(). Quelle est la différence entre un middleware global et un middleware appliqué à une route précise ? Donnez un exemple d'utilisation.
+- v-bind sert à relier un attribut HTML à une donnée. Au lieu d'écrire une valeur en dur, on la branche sur une variable. On peut l'écrire en raccourci avec juste ":".
+- v-model, c'est la liaison dans les deux sens sur un champ de formulaire : la variable met à jour l'input, et l'input met à jour la variable. Pratique pour une barre de recherche ou un formulaire.
+- v-if affiche ou pas un élément selon une condition. Utile pour gérer les états vide / chargement / erreur.
+- v-for permet de boucler sur une liste pour afficher un élément par entrée.
+- @click écoute le clic sur un élément et déclenche une fonction.
 
-express.json() sert à lire le body quand le client envoie du JSON. Express le transforme en objet et on y accède avec req.body. Sans ça, req.body est vide et on ne peut pas récupérer ce que le client a envoyé.
+Exemples :
 
-Un middleware global, c'est quand on fait app.use() : il passe sur toutes les requêtes. Un middleware de route, c'est qu'on le met directement sur une route, genre app.post('/truc', monMiddleware, handler). Du coup il ne tourne que pour cette route-là.
+<!-- v-model : le champ et la variable search restent synchronisés -->
+<input v-model="search" placeholder="Rechercher un événement" />
 
-Exemple avec une API de bornes de recharge pour voitures électriques :
+<!-- v-for : on affiche une carte par événement -->
+<EventCard v-for="event in events" :key="event.id" :event="event" />
 
-const express = require('express');
-const app = express();
+<!-- v-if + @click -->
+<p v-if="events.length === 0">Aucun événement trouvé</p>
+<button @click="loadEvents">Recharger</button>
 
-app.use(express.json());
-
-app.use((req, res, next) => {
-  req.stationId = req.headers['x-station-id'];
-  next();
-});
-
-app.post('/sessions/start', verifyPaymentMethod, (req, res) => {
-  const { connectorId, targetKwh } = req.body;
-  startChargingSession(req.stationId, connectorId, targetKwh);
-  res.status(201).json({ status: 'charging' });
-});
-
-app.get('/stations/:id/status', (req, res) => {
-  res.json(getStationStatus(req.params.id));
-});
-
-Ici express.json() et le middleware qui récupère le stationId s'appliquent à tout. Par contre verifyPaymentMethod ne s'exécute que quand quelqu'un démarre une charge, pas quand on consulte juste le statut d'une borne. Pas besoin de vérifier le paiement pour une simple lecture.
+Ici on voit aussi v-bind avec ":key" et ":event" qui passent des valeurs dynamiques.
 
 
-3 Expliquez le lien entre Schema, Model et Document avec Mongoose. Quelle est la différence entre find(), findById() et save() ?
+Q3 Expliquez l'intérêt de la Composition API avec <script setup>. Quelle est la différence entre ref() et computed() ? Donnez un exemple concret.
 
-Avec Mongoose, on part du Schema pour définir à quoi ressemble une donnée : les champs, leurs types, les valeurs par défaut, etc. C'est juste la structure, ça ne touche pas encore à la base.
+La Composition API avec <script setup>, ça permet d'écrire la logique d'un composant de façon plus directe et plus lisible. On déclare ses variables et ses fonctions à la suite, sans passer par une grosse structure avec data, methods, computed séparés. Et surtout, quand un composant devient gros, on peut regrouper le code par fonctionnalité au lieu de l'éparpiller, et même sortir de la logique dans des fichiers à part pour la réutiliser.
 
-Ensuite on crée un Model à partir de ce Schema. Le Model, c'est ce qui fait le lien avec une collection MongoDB. C'est par lui qu'on va lire ou écrire des données, un peu comme une table en SQL.
+La différence entre ref() et computed() :
+- ref() sert à créer une donnée réactive qu'on peut modifier nous-mêmes. Par exemple un compteur, un texte de recherche, une liste. On lit et on change sa valeur avec .value.
+- computed() sert à créer une valeur calculée à partir d'autres données. On ne la modifie pas directement : elle se recalcule toute seule quand ce dont elle dépend change. En plus elle est mise en cache, donc elle ne recalcule que si nécessaire.
 
-Un Document, c'est une entrée concrète, une instance du Model. Quand on fait new Book({...}), on obtient un document. C'est un objet JavaScript qui correspond à un enregistrement dans la collection.
+Exemple concret : une recherche qui filtre une liste d'événements.
 
-Pour les méthodes : save() sert à enregistrer un document qu'on vient de créer ou modifier. find() cherche plusieurs documents selon un critère et renvoie une liste. findById() récupère un seul document à partir de son _id.
+const search = ref('')
+const events = ref([...]) // la liste complète
 
+const filteredEvents = computed(() =>
+  events.value.filter(e =>
+    e.title.toLowerCase().includes(search.value.toLowerCase())
+  )
+)
 
-4 Décrivez les étapes d'un système register/login sécurisé avec bcrypt et JWT. Expliquez aussi le rôle d'un middleware d'authentification et la différence entre une réponse 401 et une réponse 403.
-
-Pour l'inscription, l'utilisateur envoie son email et son mot de passe. On ne stocke jamais le mot de passe en clair : on le hash avec bcrypt avant de l'enregistrer en base. Comme ça, même si la base est compromise, on ne récupère pas directement les mots de passe.
-
-Pour la connexion, on retrouve l'utilisateur en base avec son email, puis on compare le mot de passe envoyé avec le hash stocké grâce à bcrypt.compare(). Si ça correspond, on génère un JWT qui contient par exemple l'id de l'utilisateur, signé avec une clé secrète. On renvoie ce token au client, qui le garde (souvent dans le localStorage ou un cookie).
-
-Ensuite, pour accéder aux routes protégées, le client envoie le token dans le header Authorization (Bearer token). Un middleware d'authentification intercepte la requête avant le handler : il vérifie que le token est valide et pas expiré. Si tout est bon, il récupère l'id utilisateur et passe à la suite avec next(). Sinon il bloque la requête.
-
-401 et 403, ce n'est pas la même chose :
-- 401 : l'utilisateur n'est pas authentifié. Pas de token, token invalide ou expiré. En gros le serveur ne sait pas qui fait la requête.
-- 403 : l'utilisateur est bien connecté, mais il n'a pas le droit d'accéder à cette ressource. Par exemple un simple utilisateur qui essaie d'accéder à une route admin.
+Ici search et events sont des ref (des données qu'on modifie). filteredEvents est un computed : dès que search change, la liste filtrée se met à jour automatiquement, sans qu'on ait à la recalculer à la main.
 
 
+Q4 Expliquez comment les composants communiquent avec props, emits et slots. Expliquez aussi le rôle de Vue Router et de Pinia dans une application composée de plusieurs pages.
+
+Pour la communication entre composants :
+- Les props, c'est ce qu'un composant parent envoie à un composant enfant. Ça descend du parent vers l'enfant. Par exemple la page passe un objet "event" à une EventCard pour qu'elle sache quoi afficher.
+- Les emits, c'est l'inverse : l'enfant prévient le parent qu'il s'est passé quelque chose. Par exemple un EventForm qui émet un événement "submit" avec les données du formulaire, et c'est le parent qui décide quoi en faire.
+- Les slots, ça permet au parent d'injecter du contenu à l'intérieur d'un composant. C'est pratique pour un composant réutilisable genre BaseCard ou BaseModal : le composant gère l'apparence (la bordure, le fond...) et le parent met le contenu qu'il veut dedans.
+
+Vue Router, c'est ce qui gère la navigation entre les pages. Comme on est sur une application d'une seule page, on ne recharge pas vraiment le navigateur : le router regarde l'URL et affiche la bonne view. Par exemple "/" montre le dashboard, "/events/:id" le détail d'un événement, "/create" le formulaire. Il gère aussi les liens et le passage de paramètres dans l'URL (l'id de l'événement par exemple).
+
+Pinia, c'est le store, l'endroit où on centralise les données partagées entre plusieurs pages. Plutôt que de faire passer les mêmes infos de composant en composant, on les met dans le store et n'importe quelle page peut y accéder. Par exemple la liste des événements peut être stockée dans un store : le dashboard l'affiche, la page détail y récupère un événement précis, et quand on en crée un nouveau on l'ajoute au store. Ça évite de recharger les mêmes données partout et de galérer à les faire circuler.

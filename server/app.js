@@ -1,12 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const logger = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
-const authRoutes = require('./routes/auth.routes');
 const eventRoutes = require('./routes/event.routes');
 
 const app = express();
 
 // Middlewares globaux
+app.use(cors());
 app.use(express.json());
 app.use(logger);
 
@@ -16,7 +17,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes de l'API
-app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 
 // 404 pour toute route inconnue

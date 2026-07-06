@@ -1,7 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middlewares/validate');
-const auth = require('../middlewares/auth');
 const eventController = require('../controllers/event.controller');
 const { ALLOWED_CATEGORIES } = require('../models/Event.model');
 
@@ -26,8 +25,8 @@ const eventValidators = [
     .withMessage('La capacité doit être un entier positif'),
 ];
 
-// Routes protégées (écriture) : nécessitent un token JWT valide
-router.post('/', auth, eventValidators, validate, eventController.create);
-router.delete('/:id', auth, eventController.remove);
+// Routes d'écriture (auth retirée pour ce partiel front : pas de login requis)
+router.post('/', eventValidators, validate, eventController.create);
+router.delete('/:id', eventController.remove);
 
 module.exports = router;

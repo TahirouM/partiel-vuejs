@@ -2,7 +2,7 @@ require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/eventhub';
 
 async function start() {

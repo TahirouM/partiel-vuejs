@@ -1,126 +1,124 @@
-# EventHub EEMI — API REST
+# EventHub EEMI — Frontend Vue 3
 
-Mini API de gestion d'événements. **Node.js + Express + MongoDB**, authentification JWT, mots de passe hashés (bcrypt).
+Interface web de gestion d'événements développée en **Vue 3 + Vite** (Composition API, `<script setup>`, Vue Router, Pinia). Elle permet de **consulter, filtrer, afficher en détail et créer** des événements.
 
-## Installation
+Le projet contient aussi l'**API Node.js** (Express + MongoDB) dans le dossier `server/`, consommée par le front. Le contrat API est identique au sujet Node.js EventHub.
 
-```bash
-npm install
-cp .env.example .env   # puis renseigner MONGO_URI et JWT_SECRET
-```
-
-Il faut une base **MongoDB** accessible (locale ou distante).
-
-## Lancement
-
-```bash
-npm start        # production
-npm run dev      # dev (redémarrage auto)
-npm test         # tests (base MongoDB en mémoire, aucune vraie base requise)
-```
-
-Serveur sur `http://localhost:3000` (port réglable via `PORT` dans `.env`).
-
-## Variables d'environnement
-
-| Variable         | Description                | Exemple                               |
-| ---------------- | -------------------------- | ------------------------------------- |
-| `PORT`           | Port du serveur            | `3000`                                |
-| `MONGO_URI`      | URI MongoDB                | `mongodb://127.0.0.1:27017/eventhub`  |
-| `JWT_SECRET`     | Secret de signature JWT    | `une_chaine_longue_aleatoire`         |
-| `JWT_EXPIRES_IN` | Durée de validité du token | `1d`                                  |
-
-## Routes
-
-| Méthode  | Route                | JWT | Description                              |
-| -------- | -------------------- | :-: | ---------------------------------------- |
-| `POST`   | `/api/auth/register` |     | Créer un utilisateur, renvoie un token   |
-| `POST`   | `/api/auth/login`    |     | Connexion, renvoie un token              |
-| `GET`    | `/api/events`        |     | Liste (filtres `?category=` et `?q=`)    |
-| `GET`    | `/api/events/:id`    |     | Récupérer un événement                   |
-| `POST`   | `/api/events`        | ✅  | Créer un événement                       |
-| `DELETE` | `/api/events/:id`    | ✅  | Supprimer (réservé au propriétaire)      |
-
-Routes protégées : header `Authorization: Bearer <token>`.
-Seul le créateur d'un événement peut le supprimer (sinon **403**).
-Catégories : `cours`, `atelier`, `conference`, `networking`.
-
-## Exemples
-
-```bash
-# Inscription
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@eemi.com","password":"password123"}'
-
-# Créer un événement (avec le token reçu)
-curl -X POST http://localhost:3000/api/events \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"title":"Atelier Vue","description":"Un atelier pour découvrir Vue.js","date":"2026-01-12","location":"EEMI","category":"atelier","capacity":30}'
-
-# Lister
-curl "http://localhost:3000/api/events?category=atelier"
-```
-
-Codes HTTP : `200` `201` `400` `401` `403` `404` `409` `500`.
+- **Mode utilisé : API Node.js réelle** (dossier `server/`, Express + MongoDB), pas de mock JSON.
 
 ---
 
-## Partie 1 — Réponses théoriques
+## Installation & lancement
 
-### Q1. Node.js et asynchrone
+Le projet a deux parties : l'**API** (`server/`) et le **front** (racine). Il faut lancer les deux.
 
-Node.js est adapté aux API non bloquantes car il fonctionne de manière asynchrone : quand une requête prend du temps, le serveur n'attend pas et continue à traiter les autres. Par exemple, un export qui prend 500 ms ne bloque pas le serveur.
+### Prérequis
+- Node.js 18+
+- MongoDB lancé en local (`mongodb://127.0.0.1:27017`)
 
-Avec des callbacks, dès qu'on enchaîne les opérations le code devient imbriqué et dur à lire :
+### 1. Backend (API)
 
-```js
-db.query('SELECT * FROM users', (err, rows) => {
-  if (err) return res.status(500).json({ error: err.message });
-  fs.writeFile('export.csv', convertToCsv(rows), (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.download('export.csv');
-  });
-});
+```bash
+cd server
+npm install
+cp .env.example .env      # PORT=4000, MONGO_URI=...
+npm run seed              # insère 5 événements de démo (optionnel)
+npm run dev               # API sur http://localhost:4000
 ```
 
-Avec async/await, on écrit dans l'ordre, étape par étape :
+### 2. Frontend (Vue)
 
-```js
-const rows = await db.query('SELECT * FROM users');
-await fs.promises.writeFile('export.csv', convertToCsv(rows));
-res.download('export.csv');
+Dans un second terminal, à la racine du projet :
+
+```bash
+npm install
+npm run dev               # front sur http://localhost:5173
 ```
 
-### Q2. Express et middlewares
+Le front appelle `/api/...` ; en dev, **Vite proxifie ces requêtes vers l'API Node** (`http://localhost:4000`), donc aucun souci de CORS. Ouvrir ensuite **http://localhost:5173**.
 
-`express.json()` lit le body JSON envoyé par le client et le rend accessible via `req.body`. Sans lui, `req.body` est vide.
+### Build de production
 
-Un middleware **global** (`app.use()`) s'applique à toutes les requêtes ; un middleware **de route** (`app.post('/x', mw, handler)`) ne tourne que pour cette route.
-
-```js
-app.use(express.json());                         // global
-app.post('/sessions/start', verifyPayment, handler); // route seulement
+```bash
+npm run build             # génère dist/
+npm run preview
 ```
 
-Ici `verifyPayment` ne s'exécute que pour démarrer une charge, pas pour lire un statut.
+---
 
-### Q3. Mongoose : Schema, Model, Document
+## Structure du projet
 
-Le **Schema** définit la structure des données (champs, types, défauts). Le **Model** est créé à partir du Schema et fait le lien avec une collection MongoDB (comme une table). Un **Document** est une instance concrète du Model (un enregistrement).
+```
+partiel_vuejs/
+├── index.html            # point d'entrée HTML
+├── vite.config.js        # config Vite + proxy /api → :4000
+├── src/
+│   ├── main.js           # création de l'app, branchement router + Pinia
+│   ├── App.vue           # composant racine (Navbar + RouterView)
+│   ├── router/           # routes Vue Router
+│   ├── stores/           # store Pinia (events : liste, loading, erreurs, filtres)
+│   ├── services/         # couche d'accès à l'API (fetch)
+│   ├── constants.js      # catégories + helpers (dates, libellés)
+│   ├── components/       # composants réutilisables
+│   │   ├── Navbar.vue
+│   │   ├── EventCard.vue
+│   │   ├── EventForm.vue
+│   │   ├── SearchBar.vue
+│   │   ├── BaseButton.vue
+│   │   └── BaseCard.vue  # composant générique avec slots
+│   └── views/            # pages liées aux routes
+│       ├── HomeView.vue          # /        (liste + recherche + filtre)
+│       ├── EventDetailView.vue   # /events/:id
+│       ├── CreateEventView.vue   # /create
+│       └── NotFoundView.vue      # 404
+└── server/               # API Node.js (Express + MongoDB)
+```
 
-- `find()` : renvoie plusieurs documents selon un critère.
-- `findById()` : renvoie un seul document par son `_id`.
-- `save()` : enregistre un document créé ou modifié.
+### Pages (Vue Router)
+- `/` — dashboard : liste des événements, recherche et filtre par catégorie
+- `/events/:id` — détail d'un événement
+- `/create` — formulaire de création
 
-### Q4. Authentification JWT
+### Contrat API consommé
+- `GET /api/events` — liste des événements
+- `GET /api/events/:id` — détail d'un événement
+- `POST /api/events` — création d'un événement
 
-**Inscription** : l'utilisateur envoie email + mot de passe, qu'on hash avec bcrypt avant de stocker (jamais en clair).
+Format d'un événement :
+```json
+{ "_id": "...", "title": "Atelier Vue", "description": "...", "date": "2026-01-12",
+  "location": "EEMI", "category": "atelier", "capacity": 30 }
+```
+Catégories autorisées : `cours`, `atelier`, `conference`, `networking`.
 
-**Connexion** : on retrouve l'utilisateur par email, on compare le mot de passe avec `bcrypt.compare()`. Si ça correspond, on génère un JWT signé qu'on renvoie au client.
+> Remarque : l'authentification JWT du sujet Node a été retirée sur `POST /api/events` pour que la création fonctionne sans login.
 
-**Middleware d'authentification** : intercepte les requêtes protégées, vérifie le token (valide et non expiré) avant le handler ; sinon il bloque.
+---
 
-- **401** : non authentifié (token absent, invalide ou expiré).
-- **403** : authentifié mais pas le droit d'accéder à la ressource.
+## Captures d'écran
+
+| Desktop | Tablette | Mobile |
+|---|---|---|
+| ![Desktop](docs/screenshots/desktop.png) | ![Tablette](docs/screenshots/tablet.png) | ![Mobile](docs/screenshots/mobile.png) |
+
+| Détail d'un événement | Formulaire de création |
+|---|---|
+| ![Détail](docs/screenshots/detail.png) | ![Création](docs/screenshots/create.png) |
+
+---
+
+## Partie théorique
+
+Les réponses aux questions théoriques (Q1 à Q4) se trouvent dans le fichier [`reponses.txt`](reponses.txt).
+
+---
+
+## Points techniques (fonctionnalités demandées)
+
+- **Vue 3 + Vite + Composition API** avec `<script setup>` sur tous les composants.
+- **v-model** : recherche et champs du formulaire ; **v-for** : liste des événements ; **v-if / v-else-if / v-else** : états loading / erreur / vide ; **@click** : navigation, réessai, suppression de filtre.
+- **props** : l'événement descend du parent vers `EventCard` ; **emits** : `EventCard` remonte l'événement sélectionné (`select`), `EventForm` remonte les données (`submit`).
+- **slots** : `BaseCard` (slot par défaut + slot `footer`) et `BaseButton`.
+- **Pinia** : store `events` qui gère la liste, le `loading` et les `error`.
+- **computed** : `filteredEvents` filtre par recherche et catégorie de manière réactive.
+- **Design responsive** : grille 1 / 2 / 3 colonnes selon mobile / tablette / desktop.

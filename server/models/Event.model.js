@@ -38,11 +38,10 @@ const eventSchema = new mongoose.Schema(
       default: 30,
       min: [1, 'La capacité doit être au moins de 1'],
     },
-    // Utilisateur qui a créé l'événement (pour les droits de suppression).
+    // Utilisateur qui a créé l'événement (optionnel : pas d'auth sur ce partiel front).
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
     },
   },
   { timestamps: true }

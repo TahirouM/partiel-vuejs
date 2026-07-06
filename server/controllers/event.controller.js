@@ -32,7 +32,7 @@ exports.getById = async (req, res, next) => {
   }
 };
 
-// POST /api/events  (protégé par JWT)
+// POST /api/events
 // Crée un nouvel événement.
 exports.create = async (req, res, next) => {
   try {
@@ -44,7 +44,6 @@ exports.create = async (req, res, next) => {
       location,
       category,
       capacity,
-      owner: req.user.id, // l'utilisateur authentifié devient le propriétaire
     });
     return res.status(201).json(event);
   } catch (err) {
@@ -52,18 +51,13 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// DELETE /api/events/:id  (protégé par JWT)
+// DELETE /api/events/:id
 // Supprime un événement.
 exports.remove = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ error: 'Événement introuvable' });
-    }
-
-    // 403 : l'utilisateur est authentifié mais n'est pas le propriétaire.
-    if (event.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Vous n'êtes pas autorisé à supprimer cet événement" });
     }
 
     await event.deleteOne();
