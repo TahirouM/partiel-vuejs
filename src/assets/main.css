@@ -17,12 +17,26 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
+}
+
+/* Les champs de formulaire ne débordent jamais de leur conteneur */
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
 }
 
 a {
@@ -96,12 +110,17 @@ a {
 .field input,
 .field textarea,
 .field select {
+  width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
   background: var(--surface);
   color: var(--text);
+}
+
+.field textarea {
+  resize: vertical;
 }
 
 .field input:focus,

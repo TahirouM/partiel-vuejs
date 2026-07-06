@@ -97,13 +97,23 @@ Catégories autorisées : `cours`, `atelier`, `conference`, `networking`.
 
 ## Captures d'écran
 
+**Dashboard (liste + recherche + filtre)**
+
 | Desktop | Tablette | Mobile |
 |---|---|---|
 | ![Desktop](docs/screenshots/desktop.png) | ![Tablette](docs/screenshots/tablet.png) | ![Mobile](docs/screenshots/mobile.png) |
 
+**Détail & création (desktop)**
+
 | Détail d'un événement | Formulaire de création |
 |---|---|
 | ![Détail](docs/screenshots/detail.png) | ![Création](docs/screenshots/create.png) |
+
+**Détail & création (mobile)**
+
+| Détail (mobile) | Création (mobile) |
+|---|---|
+| ![Détail mobile](docs/screenshots/mobile-detail.png) | ![Création mobile](docs/screenshots/mobile-create.png) |
 
 ---
 

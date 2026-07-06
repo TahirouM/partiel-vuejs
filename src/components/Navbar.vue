@@ -27,12 +27,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   height: 60px;
 }
 
 .navbar__brand {
   font-weight: 800;
   font-size: 1.15rem;
+  white-space: nowrap;
 }
 
 .navbar__brand span {
@@ -42,8 +44,19 @@
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .navbar__brand {
+    font-size: 1rem;
+  }
+
+  .navbar__links {
+    gap: 0.6rem;
+  }
 }
 
 .navbar__links a.router-link-exact-active {
