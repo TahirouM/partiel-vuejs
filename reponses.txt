@@ -1,0 +1,83 @@
+
+1 Expliquez pourquoi Node.js est adapté à la création d'API web non bloquantes. Citez un exemple d'opération lente et montrez l'intérêt de async/await par rapport à un callback simple.
+
+Node.js est adapté à la création d'API web non bloquantes car il fonctionne de manière asynchrone. Si un utilisateur lance une requête qui prend du temps, le serveur n'attend pas la fin de celle-ci avant de traiter les autres : il peut gérer plusieurs requêtes en parallèle.
+Par exemple, si un utilisateur demande un export de données qui prend 500 ms à exécuter, le serveur ne se bloque pas : il continue à recevoir et traiter les autres appels.
+
+Pour gérer ces attentes, on peut utiliser des callbacks. Ça marche, mais dès qu'on enchaîne plusieurs opérations, le code se retrouve avec des fonctions dans des fonctions dans des fonctions, et c'est dur à suivre :
+
+app.get('/export', (req, res) => {
+  db.query('SELECT * FROM users', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    fs.writeFile('export.csv', convertToCsv(rows), (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.download('export.csv');
+    });
+  });
+});
+
+Avec async/await, c'est plus simple à lire parce qu'on écrit le code dans l'ordre, étape par étape :
+
+app.get('/export', async (req, res) => {
+  const rows = await db.query('SELECT * FROM users');
+  await fs.promises.writeFile('export.csv', convertToCsv(rows));
+  res.download('export.csv');
+});
+
+
+
+2 Expliquez le rôle de express.json(). Quelle est la différence entre un middleware global et un middleware appliqué à une route précise ? Donnez un exemple d'utilisation.
+
+express.json() sert à lire le body quand le client envoie du JSON. Express le transforme en objet et on y accède avec req.body. Sans ça, req.body est vide et on ne peut pas récupérer ce que le client a envoyé.
+
+Un middleware global, c'est quand on fait app.use() : il passe sur toutes les requêtes. Un middleware de route, c'est qu'on le met directement sur une route, genre app.post('/truc', monMiddleware, handler). Du coup il ne tourne que pour cette route-là.
+
+Exemple avec une API de bornes de recharge pour voitures électriques :
+
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+  req.stationId = req.headers['x-station-id'];
+  next();
+});
+
+app.post('/sessions/start', verifyPaymentMethod, (req, res) => {
+  const { connectorId, targetKwh } = req.body;
+  startChargingSession(req.stationId, connectorId, targetKwh);
+  res.status(201).json({ status: 'charging' });
+});
+
+app.get('/stations/:id/status', (req, res) => {
+  res.json(getStationStatus(req.params.id));
+});
+
+Ici express.json() et le middleware qui récupère le stationId s'appliquent à tout. Par contre verifyPaymentMethod ne s'exécute que quand quelqu'un démarre une charge, pas quand on consulte juste le statut d'une borne. Pas besoin de vérifier le paiement pour une simple lecture.
+
+
+3 Expliquez le lien entre Schema, Model et Document avec Mongoose. Quelle est la différence entre find(), findById() et save() ?
+
+Avec Mongoose, on part du Schema pour définir à quoi ressemble une donnée : les champs, leurs types, les valeurs par défaut, etc. C'est juste la structure, ça ne touche pas encore à la base.
+
+Ensuite on crée un Model à partir de ce Schema. Le Model, c'est ce qui fait le lien avec une collection MongoDB. C'est par lui qu'on va lire ou écrire des données, un peu comme une table en SQL.
+
+Un Document, c'est une entrée concrète, une instance du Model. Quand on fait new Book({...}), on obtient un document. C'est un objet JavaScript qui correspond à un enregistrement dans la collection.
+
+Pour les méthodes : save() sert à enregistrer un document qu'on vient de créer ou modifier. find() cherche plusieurs documents selon un critère et renvoie une liste. findById() récupère un seul document à partir de son _id.
+
+
+4 Décrivez les étapes d'un système register/login sécurisé avec bcrypt et JWT. Expliquez aussi le rôle d'un middleware d'authentification et la différence entre une réponse 401 et une réponse 403.
+
+Pour l'inscription, l'utilisateur envoie son email et son mot de passe. On ne stocke jamais le mot de passe en clair : on le hash avec bcrypt avant de l'enregistrer en base. Comme ça, même si la base est compromise, on ne récupère pas directement les mots de passe.
+
+Pour la connexion, on retrouve l'utilisateur en base avec son email, puis on compare le mot de passe envoyé avec le hash stocké grâce à bcrypt.compare(). Si ça correspond, on génère un JWT qui contient par exemple l'id de l'utilisateur, signé avec une clé secrète. On renvoie ce token au client, qui le garde (souvent dans le localStorage ou un cookie).
+
+Ensuite, pour accéder aux routes protégées, le client envoie le token dans le header Authorization (Bearer token). Un middleware d'authentification intercepte la requête avant le handler : il vérifie que le token est valide et pas expiré. Si tout est bon, il récupère l'id utilisateur et passe à la suite avec next(). Sinon il bloque la requête.
+
+401 et 403, ce n'est pas la même chose :
+- 401 : l'utilisateur n'est pas authentifié. Pas de token, token invalide ou expiré. En gros le serveur ne sait pas qui fait la requête.
+- 403 : l'utilisateur est bien connecté, mais il n'a pas le droit d'accéder à cette ressource. Par exemple un simple utilisateur qui essaie d'accéder à une route admin.
+
+
