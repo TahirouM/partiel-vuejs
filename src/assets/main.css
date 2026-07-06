@@ -47,11 +47,24 @@ a {
 .container {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 960px) {
+  .container {
+    padding: 0 2rem;
+  }
 }
 
 .page {
-  padding: 2rem 0 3rem;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
 }
 
 /* Grille responsive des événements : 1 col mobile, 2 tablette, 3 desktop */
